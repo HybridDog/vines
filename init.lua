@@ -1,18 +1,20 @@
 local vine_seed = 12
 
 -- Nodes
+local c_air = minetest.get_content_id("air")
+local rope_side = "default_wood.png^vines_rope_shadow.png^vines_rope.png"
+
 minetest.register_node("vines:rope_block", {
 	description = "Rope",
 	sunlight_propagates = true,
 	paramtype = "light",
 	drops = "",
 	tiles = {
-		"vines_rope_block.png", 
-		"vines_rope_block.png",
+		rope_side, 
+		rope_side,
 		"default_wood.png", 
 		"default_wood.png", 
-		"vines_rope_block.png", 
-		"vines_rope_block.png" 
+		rope_side, 
 	},
 	drawtype = "cube",
 	groups = { snappy = 3},
@@ -26,15 +28,43 @@ minetest.register_node("vines:rope_block", {
 	end,
 	after_dig_node = function(pos)
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
-		local n = minetest.env:get_node(p)
-		while n.name == 'vines:rope' do
-			minetest.env:remove_node(p)
-			p.y = p.y-1
-			n = minetest.env:get_node(p)
-		end 
-		if n.name == 'vines:rope_end' then
-			minetest.env:remove_node(p)
+		local n = minetest.get_node(p).name
+
+		if n ~= 'vines:rope'
+		and n ~= 'vines:rope_end' then
+			return
 		end
+
+		local t1 = os.clock()
+		local y1 = p.y
+		local tab = {}
+		local i = 1
+		while n == 'vines:rope' do
+			tab[i] = p
+			i = i+1
+			p.y = p.y-1
+			n = minetest.get_node(p).name
+		end 
+		if n == 'vines:rope_end' then
+			tab[i] = p
+		end
+		local y0 = p.y
+
+		local manip = minetest.get_voxel_manip()
+		local p1 = {x=p.x, y=y0, z=p.z}
+		local p2 = {x=p.x, y=y1, z=p.z}
+		local pos1, pos2 = manip:read_from_map(p1, p2)
+		area = VoxelArea:new({MinEdge=pos1, MaxEdge=pos2})
+		nodes = manip:get_data()
+
+		for i in area:iterp(p1, p2) do
+			nodes[i] = c_air
+		end
+
+		manip:set_data(nodes)
+		manip:write_to_map()
+		manip:update_map() -- <— this takes time
+		print(string.format("[vines] rope removed at ("..pos.x.."|"..pos.y.."|"..pos.z..") after: %.2fs", os.clock() - t1))
 	end
 })
 
@@ -244,30 +274,28 @@ minetest.register_abm({
 	end
 })
 
-is_node_in_cube = function(nodenames, node_pos, radius)
-	for x = node_pos.x - radius, node_pos.x + radius do
-	for y = node_pos.y - radius, node_pos.y + radius do
-		for z = node_pos.z - radius, node_pos.z + radius do
-		n = minetest.env:get_node_or_nil({x = x, y = y, z = z})
-		if (n == nil)
-			or (n.name == 'ignore')
-			or (table_contains(nodenames, n.name) == true) then
-			return true
-		end
+function is_node_in_cube(nodenames, pos, s)
+	for i = -s, s do
+		for j = -s, s do
+			for k = -s, s do
+				local n = minetest.get_node_or_nil({x=pos.x+i, y=pos.y+j, z=pos.z+k})
+				if n == nil
+				or n.name == 'ignore'
+				or table_contains(nodenames, n.name) == true then
+					return true
+				end
+			end
 		end
 	end
-	end
-
 	return false
 end
 
 table_contains = function(t, v)
-	for _, i in ipairs(t) do
-	if (i == v) then
-		return true
+	for _,i in ipairs(t) do
+		if i == v then
+			return true
+		end
 	end
-	end
-
 	return false
 end
 
