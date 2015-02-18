@@ -64,7 +64,7 @@ minetest.register_node("vines:rope_block", {
 		manip:set_data(nodes)
 		manip:write_to_map()
 		manip:update_map() -- <— this takes time
-		print(string.format("[vines] rope removed at ("..pos.x.."|"..pos.y.."|"..pos.z..") after: %.2fs", os.clock() - t1))
+		minetest.log("info", string.format("[vines] rope removed at "..minetest.pos_to_string(pos).." after: %.2fs", os.clock() - t1))
 	end
 })
 
@@ -180,7 +180,7 @@ minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree
 		
 		if n.name == "air" then
 			minetest.add_node(p, {name="vines:vine"})
-			print("[vines] vine grew at: ("..p.x..", "..p.y..", "..p.z..")")
+			minetest.log("info", "[vines] vine grew at: "..minetest.pos_to_string(p))
 		end
 	end
 })
@@ -191,12 +191,12 @@ minetest.register_abm({
 	chance = 4,
 	action = function(pos)
 
-		local s_pos = "("..pos.x..", "..pos.y..", "..pos.z..")"
+		local s_pos = minetest.pos_to_string(pos)
 
 		--remove if top node is removed
 		if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "air" then 
 			minetest.remove_node(pos)
-			print("[vines] vine removed at: "..s_pos)
+			minetest.log("info", "[vines] vine removed at: "..s_pos)
 			return
 		end
 
@@ -208,13 +208,13 @@ minetest.register_abm({
 
 		--the second argument in the random function represents the average height
 		if pr:next(1,4) == 1 then 
-			print("[vines] vine ended at: "..s_pos)
+			minetest.log("info", "[vines] vine ended at: "..s_pos)
 			return
 		end
 
 		if n.name =="air" then
 			minetest.add_node(p, {name="vines:vine"})
-			print("[vines] vine got longer at: ("..p.x..", "..p.y..", "..p.z..")")
+			minetest.log("info", "[vines] vine got longer at: "..minetest.pos_to_string(p))
 		end
 	end
 })
@@ -240,7 +240,7 @@ minetest.register_abm({
 		)
 		or n_about == "air" then
 			minetest.remove_node(pos)
-			print("[vines] rotten vine disappeared at: ("..pos.x..", "..pos.y..", "..pos.z..")")
+			minetest.log("info", "[vines] rotten vine disappeared at: "..minetest.pos_to_string(pos))
 		end
 		
 	end
@@ -259,7 +259,7 @@ minetest.register_abm({
 		if n.name == "air"
 		and is_node_in_cube ({"vines:vine"}, pos, 3) then
 			minetest.add_node(p, {name="vines:vine"})
-			print("[vines] vine grew at: ("..p.x..", "..p.y..", "..p.z..")")
+			minetest.log("info", "[vines] vine grew at: "..minetest.pos_to_string(p))
 		end 
 	end
 })
@@ -320,4 +320,4 @@ minetest.register_craftitem("vines:vines", {
 	description = "Vines",
 	inventory_image = "vines_vine.png",
 })
-print("[Vines] v1.1 loaded")
+minetest.log("info", "[Vines] v1.1 loaded")
