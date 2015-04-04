@@ -164,9 +164,27 @@ minetest.register_node("vines:vine_rotten", {
 	end 
 })
 
---ABM
+
+--ABMs
+
 local function get_vine_random(pos)
 	return PseudoRandom(math.abs(pos.x+pos.y*3+pos.z*5)+vine_seed)
+end
+
+
+local function grass_vine_abm(pos)
+	local pr = get_vine_random(pos)
+	if pr:next(1,4) == 1 then
+		return
+	end
+	
+	local p = {x=pos.x, y=pos.y-1, z=pos.z}
+	local n = minetest.get_node(p)
+	
+	if n.name == "air" then
+		minetest.add_node(p, {name="vines:vine"})
+		log("[vines] vine grew at: "..minetest.pos_to_string(p))
+	end
 end
 
 minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree:leaves_yellow", "jungletree:leaves_red", "default:leaves"
@@ -174,97 +192,116 @@ minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree
 	interval = 80,
 	chance = 200,
 	action = function(pos)
-		local pr = get_vine_random(pos)
-		if pr:next(1,4) == 1 then
-			return
-		end
-		
-		local p = {x=pos.x, y=pos.y-1, z=pos.z}
-		local n = minetest.get_node(p)
-		
-		if n.name == "air" then
-			minetest.add_node(p, {name="vines:vine"})
-			log("[vines] vine grew at: "..minetest.pos_to_string(p))
-		end
+		minetest.delay_function(800, function(pos)
+			local node = minetest.get_node(pos)
+			if node.name == "default:dirt_with_grass" then
+				grass_vine_abm(pos, node)
+			end
+		end, pos)
 	end
 })
 
-minetest.register_abm({
-	nodenames = {"vines:vine"},
-	interval = 5,
-	chance = 4,
-	action = function(pos)
 
-		local s_pos = minetest.pos_to_string(pos)
-
-		--remove if top node is removed
-		if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "air" then 
-			minetest.remove_node(pos)
-			log("[vines] vine removed at: "..s_pos)
-			return
-		end
-
-		minetest.add_node(pos, {name="vines:vine_rotten"})
-
-		local p = {x=pos.x, y=pos.y-1, z=pos.z}
-		local n = minetest.get_node(p)
-		local pr = get_vine_random(pos)
-
-		--the second argument in the random function represents the average height
-		if pr:next(1,4) == 1 then 
-			log("[vines] vine ended at: "..s_pos)
-			return
-		end
-
-		if n.name =="air" then
-			minetest.add_node(p, {name="vines:vine"})
-			log("[vines] vine got longer at: "..minetest.pos_to_string(p))
-		end
-	end
-})
-
-minetest.register_abm({
-	nodenames = {"vines:vine_rotten"},
-	interval = 60,
-	chance = 4,
-	action = function(pos)
-		
-		local p = {x=pos.x, y=pos.y-1, z=pos.z}
-		local n = minetest.get_node(p)
-		local n_about = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
-		local pr = get_vine_random(pos)
-		
-		-- only remove if nothing is hangin on the bottom of it.
-		if (
-				n.name ~="vines:vine"
-			and n.name ~="vines:vine_rotten"
-			and n_about ~= "default:dirt"
-			and n_about ~= "default:dirt_with_grass"
-			and pr:next(1,4) ~= 1
-		)
-		or n_about == "air" then
-			minetest.remove_node(pos)
-			log("[vines] rotten vine disappeared at: "..minetest.pos_to_string(pos))
-		end
-		
-	end
-})
+local function dirt_vine_abm(pos)
+	local p = {x=pos.x, y=pos.y-1, z=pos.z}
+	local n = minetest.get_node(p)
+	
+	--remove if top node is removed
+	if n.name == "air"
+	and is_node_in_cube({"vines:vine"}, pos, 3) then
+		minetest.add_node(p, {name="vines:vine"})
+		log("[vines] vine grew at: "..minetest.pos_to_string(p))
+	end 
+end
 
 minetest.register_abm({
 	nodenames = {"default:dirt"},
 	interval = 36000,
 	chance = 10,
 	action = function(pos)
-		
-		local p = {x=pos.x, y=pos.y-1, z=pos.z}
-		local n = minetest.get_node(p)
-		
-		--remove if top node is removed
-		if n.name == "air"
-		and is_node_in_cube ({"vines:vine"}, pos, 3) then
-			minetest.add_node(p, {name="vines:vine"})
-			log("[vines] vine grew at: "..minetest.pos_to_string(p))
-		end 
+		minetest.delay_function(6000, function(pos)
+			local node = minetest.get_node(pos)
+			if node.name == "default:dirt" then
+				dirt_vine_abm(pos, node)
+			end
+		end, pos)
+	end
+})
+
+
+local function vine_abm(pos)
+	local s_pos = minetest.pos_to_string(pos)
+
+	--remove if top node is removed
+	if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "air" then 
+		minetest.remove_node(pos)
+		log("[vines] vine removed at: "..s_pos)
+		return
+	end
+
+	minetest.add_node(pos, {name="vines:vine_rotten"})
+
+	local p = {x=pos.x, y=pos.y-1, z=pos.z}
+	local n = minetest.get_node(p)
+	local pr = get_vine_random(pos)
+
+	--the second argument in the random function represents the average height
+	if pr:next(1,4) == 1 then 
+		log("[vines] vine ended at: "..s_pos)
+		return
+	end
+
+	if n.name =="air" then
+		minetest.add_node(p, {name="vines:vine"})
+		log("[vines] vine got longer at: "..minetest.pos_to_string(p))
+	end
+end
+
+minetest.register_abm({
+	nodenames = {"vines:vine"},
+	interval = 5,
+	chance = 4,
+	action = function(pos)
+		minetest.delay_function(10, function(pos)
+			local node = minetest.get_node(pos)
+			if node.name == "vines:vine" then
+				vine_abm(pos, node)
+			end
+		end, pos)
+	end
+})
+
+
+local function rotten_vine_abm(pos)
+	local n_under = minetest.get_node({x=pos.x, y=pos.y-1, z=pos.z}).name
+	local n_above = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
+	local pr = get_vine_random(pos)
+	
+	-- only remove if nothing is hangin on the bottom of it.
+	if (
+		n_under ~= "vines:vine"
+		and n_under ~= "vines:vine_rotten"
+		and n_above ~= "default:dirt"
+		and n_above ~= "default:dirt_with_grass"
+		and pr:next(1,4) ~= 1
+	)
+	or n_above == "air" then
+		minetest.remove_node(pos)
+		log("[vines] rotten vine disappeared at: "..minetest.pos_to_string(pos))
+	end
+end
+
+minetest.register_abm({
+	nodenames = {"vines:vine_rotten"},
+	interval = 60,
+	chance = 4,
+	action = function(pos)
+		minetest.delay_function(59, function(pos)
+			local node = minetest.get_node(pos)
+			if node.name == "vines:vine_rotten" then
+				rotten_vine_abm(pos, node)
+			end
+		end, pos)
 	end
 })
 
@@ -272,7 +309,7 @@ minetest.register_abm({
 	nodenames = {"vines:rope_end"},
 	interval = 1,
 	chance = 1,
-	action = function(pos, node, active_object_count, active_object_count_wider)
+	action = function(pos, node)
 		
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
 		local n = minetest.get_node(p)
