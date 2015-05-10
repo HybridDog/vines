@@ -23,14 +23,14 @@ minetest.register_node("vines:rope_block", {
 	drawtype = "cube",
 	groups = { snappy = 3},
 	sounds =  default.node_sound_leaves_defaults(),
-	after_place_node = function(pos)
+	on_construct = function(pos)
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
 		local n = minetest.get_node(p)
 		if n.name == "air" then
 			minetest.add_node(p, {name="vines:rope_end"})
 		end
 	end,
-	after_dig_node = function(pos)
+	after_destruct = function(pos)
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
 		local n = minetest.get_node(p).name
 
@@ -167,6 +167,23 @@ minetest.register_node("vines:vine_rotten", {
 
 --ABMs
 
+local disallowed_abm_ps = {}
+local function abm_disallowed(pos)
+	local pstr = pos.x.." "..pos.y.." "..pos.z
+	if disallowed_abm_ps[pstr] then
+		return true
+	end
+	disallowed_abm_ps[pstr] = true
+	if not disallowed_abm_ps[1] then
+		disallowed_abm_ps[1] = true
+		minetest.after(4, function()
+			disallowed_abm_ps = {}
+		end)
+	end
+	return false
+end
+
+
 local function get_vine_random(pos)
 	return PseudoRandom(math.abs(pos.x+pos.y*3+pos.z*5)+vine_seed)
 end
@@ -192,12 +209,16 @@ minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree
 	interval = 80,
 	chance = 200,
 	action = function(pos)
-		minetest.delay_function(800, function(pos)
+		if abm_disallowed(pos) then
+			return
+		end
+		grass_vine_abm(pos)
+		--[[minetest.delay_function(800, function(pos)
 			local node = minetest.get_node(pos)
 			if node.name == "default:dirt_with_grass" then
 				grass_vine_abm(pos, node)
 			end
-		end, pos)
+		end, pos)]]
 	end
 })
 
@@ -219,12 +240,13 @@ minetest.register_abm({
 	interval = 36000,
 	chance = 10,
 	action = function(pos)
-		minetest.delay_function(6000, function(pos)
+		dirt_vine_abm(pos)
+		--[[minetest.delay_function(6000, function(pos)
 			local node = minetest.get_node(pos)
 			if node.name == "default:dirt" then
 				dirt_vine_abm(pos, node)
 			end
-		end, pos)
+		end, pos)]]
 	end
 })
 
@@ -262,12 +284,16 @@ minetest.register_abm({
 	interval = 5,
 	chance = 4,
 	action = function(pos)
-		minetest.delay_function(10, function(pos)
+		if abm_disallowed(pos) then
+			return
+		end
+		vine_abm(pos)
+		--[[minetest.delay_function(10, function(pos)
 			local node = minetest.get_node(pos)
 			if node.name == "vines:vine" then
 				vine_abm(pos, node)
 			end
-		end, pos)
+		end, pos)]]
 	end
 })
 
@@ -296,12 +322,16 @@ minetest.register_abm({
 	interval = 60,
 	chance = 4,
 	action = function(pos)
-		minetest.delay_function(59, function(pos)
+		if abm_disallowed(pos) then
+			return
+		end
+		rotten_vine_abm(pos)
+		--[[minetest.delay_function(59, function(pos)
 			local node = minetest.get_node(pos)
 			if node.name == "vines:vine_rotten" then
 				rotten_vine_abm(pos, node)
 			end
-		end, pos)
+		end, pos)]]
 	end
 })
 
