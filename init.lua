@@ -169,7 +169,8 @@ minetest.register_node("vines:vine_rotten", {
 
 local disallowed_abm_ps = {}
 local function abm_disallowed(pos)
-	local pstr = pos.x.." "..pos.y.." "..pos.z
+	local p = vector.apply(vector.divide(pos, 5), math.floor)
+	local pstr = p.x.." "..p.y.." "..p.z
 	if disallowed_abm_ps[pstr] then
 		return true
 	end
