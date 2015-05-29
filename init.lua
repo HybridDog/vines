@@ -14,11 +14,11 @@ minetest.register_node("vines:rope_block", {
 	paramtype = "light",
 	drops = "",
 	tiles = {
-		rope_side, 
 		rope_side,
-		"default_wood.png", 
-		"default_wood.png", 
-		rope_side, 
+		rope_side,
+		"default_wood.png",
+		"default_wood.png",
+		rope_side,
 	},
 	drawtype = "cube",
 	groups = { snappy = 3},
@@ -48,7 +48,7 @@ minetest.register_node("vines:rope_block", {
 			i = i+1
 			p.y = p.y-1
 			n = minetest.get_node(p).name
-		end 
+		end
 		if n == 'vines:rope_end' then
 			tab[i] = p
 		end
@@ -87,7 +87,7 @@ minetest.register_node("vines:rope", {
 		type = "fixed",
 		fixed = {-1/7, -1/2, -1/7, 1/7, 1/2, 1/7},
 	},
-	
+
 })
 
 minetest.register_node("vines:rope_end", {
@@ -161,7 +161,7 @@ minetest.register_node("vines:vine_rotten", {
 		if minetest.get_node(about).name == vine then
 			minetest.add_node(about, {name="vines:vine"})
 		end
-	end 
+	end
 })
 
 
@@ -195,10 +195,10 @@ local function grass_vine_abm(pos)
 	if pr:next(1,4) == 1 then
 		return
 	end
-	
+
 	local p = {x=pos.x, y=pos.y-1, z=pos.z}
 	local n = minetest.get_node(p)
-	
+
 	if n.name == "air" then
 		minetest.add_node(p, {name="vines:vine"})
 		log("[vines] vine grew at: "..minetest.pos_to_string(p))
@@ -227,13 +227,13 @@ minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree
 local function dirt_vine_abm(pos)
 	local p = {x=pos.x, y=pos.y-1, z=pos.z}
 	local n = minetest.get_node(p)
-	
+
 	--remove if top node is removed
 	if n.name == "air"
 	and is_node_in_cube({"vines:vine"}, pos, 3) then
 		minetest.add_node(p, {name="vines:vine"})
 		log("[vines] vine grew at: "..minetest.pos_to_string(p))
-	end 
+	end
 end
 
 minetest.register_abm({
@@ -256,7 +256,7 @@ local function vine_abm(pos)
 	local s_pos = minetest.pos_to_string(pos)
 
 	--remove if top node is removed
-	if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "air" then 
+	if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "air" then
 		minetest.remove_node(pos)
 		log("[vines] vine removed at: "..s_pos)
 		return
@@ -269,7 +269,7 @@ local function vine_abm(pos)
 	local pr = get_vine_random(pos)
 
 	--the second argument in the random function represents the average height
-	if pr:next(1,4) == 1 then 
+	if pr:next(1,4) == 1 then
 		log("[vines] vine ended at: "..s_pos)
 		return
 	end
@@ -303,7 +303,7 @@ local function rotten_vine_abm(pos)
 	local n_under = minetest.get_node({x=pos.x, y=pos.y-1, z=pos.z}).name
 	local n_above = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
 	local pr = get_vine_random(pos)
-	
+
 	-- only remove if nothing is hangin on the bottom of it.
 	if (
 		n_under ~= "vines:vine"
@@ -341,15 +341,15 @@ minetest.register_abm({
 	interval = 1,
 	chance = 1,
 	action = function(pos, node)
-		
+
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
 		local n = minetest.get_node(p)
-		
+
 		--remove if top node is removed
 		if n.name == "air" then
 			minetest.add_node(pos, {name="vines:rope"})
 			minetest.add_node(p, {name="vines:rope_end"})
-		end 
+		end
 	end
 })
 
