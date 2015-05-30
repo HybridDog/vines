@@ -157,9 +157,9 @@ minetest.register_node("vines:vine_rotten", {
 			dropitem(item, p, inv)
 			p.y = p.y-1
 		end
-		local about = {x=pos.x, y=pos.y+1, z=pos.z}
-		if minetest.get_node(about).name == vine then
-			minetest.add_node(about, {name="vines:vine"})
+		pos.y = pos.y+1
+		if minetest.get_node(pos).name == vine then
+			minetest.add_node(pos, {name="vines:vine"})
 		end
 	end
 })
