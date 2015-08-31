@@ -167,16 +167,20 @@ minetest.register_node("vines:vine_rotten", {
 
 --ABMs
 
+local set = vector.set_data_to_pos
+local get = vector.get_data_from_pos
+
 local disallowed_abm_ps = {}
 local function abm_disallowed(pos)
-	local p = vector.apply(vector.divide(pos, 5), math.floor)
-	local pstr = p.x.." "..p.y.." "..p.z
-	if disallowed_abm_ps[pstr] then
+	local z = math.floor(pos.z/5)
+	local y = math.floor(pos.y/5)
+	local x = math.floor(pos.x/5)
+	if get(disallowed_abm_ps, z,y,x) then
 		return true
 	end
-	disallowed_abm_ps[pstr] = true
-	if not disallowed_abm_ps[1] then
-		disallowed_abm_ps[1] = true
+	set(disallowed_abm_ps, z,y,x, true)
+	if not disallowed_abm_ps.aborting then
+		disallowed_abm_ps.aborting = true
 		minetest.after(4, function()
 			disallowed_abm_ps = {}
 		end)
@@ -190,16 +194,14 @@ local function get_vine_random(pos)
 end
 
 
-local function grass_vine_abm(pos)
-	local pr = get_vine_random(pos)
+local function grass_vine_abm(p)
+	local pr = get_vine_random(p)
 	if pr:next(1,4) == 1 then
 		return
 	end
 
-	local p = {x=pos.x, y=pos.y-1, z=pos.z}
-	local n = minetest.get_node(p)
-
-	if n.name == "air" then
+	p.y = p.y-1
+	if minetest.get_node(p).name == "air" then
 		minetest.add_node(p, {name="vines:vine"})
 		log("[vines] vine grew at: "..minetest.pos_to_string(p))
 	end
@@ -226,10 +228,9 @@ minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree
 
 local function dirt_vine_abm(pos)
 	local p = {x=pos.x, y=pos.y-1, z=pos.z}
-	local n = minetest.get_node(p)
 
 	--remove if top node is removed
-	if n.name == "air"
+	if minetest.get_node(p).name == "air"
 	and is_node_in_cube({"vines:vine"}, pos, 3) then
 		minetest.add_node(p, {name="vines:vine"})
 		log("[vines] vine grew at: "..minetest.pos_to_string(p))
@@ -264,19 +265,17 @@ local function vine_abm(pos)
 
 	minetest.add_node(pos, {name="vines:vine_rotten"})
 
-	local p = {x=pos.x, y=pos.y-1, z=pos.z}
-	local n = minetest.get_node(p)
 	local pr = get_vine_random(pos)
-
 	--the second argument in the random function represents the average height
 	if pr:next(1,4) == 1 then
 		log("[vines] vine ended at: "..s_pos)
 		return
 	end
 
-	if n.name =="air" then
-		minetest.add_node(p, {name="vines:vine"})
-		log("[vines] vine got longer at: "..minetest.pos_to_string(p))
+	pos.y = pos.y-1
+	if minetest.get_node(pos).name =="air" then
+		minetest.add_node(pos, {name="vines:vine"})
+		log("[vines] vine got longer at: "..minetest.pos_to_string(pos))
 	end
 end
 
@@ -302,7 +301,6 @@ minetest.register_abm({
 local function rotten_vine_abm(pos)
 	local n_under = minetest.get_node({x=pos.x, y=pos.y-1, z=pos.z}).name
 	local n_above = minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name
-	local pr = get_vine_random(pos)
 
 	-- only remove if nothing is hangin on the bottom of it.
 	if (
@@ -310,7 +308,7 @@ local function rotten_vine_abm(pos)
 		and n_under ~= "vines:vine_rotten"
 		and n_above ~= "default:dirt"
 		and n_above ~= "default:dirt_with_grass"
-		and pr:next(1,4) ~= 1
+		and (get_vine_random(pos)):next(1,4) ~= 1
 	)
 	or n_above == "air" then
 		minetest.remove_node(pos)
@@ -341,38 +339,39 @@ minetest.register_abm({
 	interval = 1,
 	chance = 1,
 	action = function(pos, node)
-
-		local p = {x=pos.x, y=pos.y-1, z=pos.z}
-		local n = minetest.get_node(p)
-
-		--remove if top node is removed
-		if n.name == "air" then
-			minetest.add_node(pos, {name="vines:rope"})
-			minetest.add_node(p, {name="vines:rope_end"})
+		pos.y = pos.y-1
+		if minetest.get_node(pos).name ~= "air" then
+			return
 		end
+
+		minetest.add_node(pos, node)
+
+		pos.y = pos.y+1
+		node.name = "vines:rope"
+		minetest.add_node(pos, node)
 	end
 })
+
+local function table_contains(t, v)
+	for _,i in pairs(t) do
+		if i == v then
+			return true
+		end
+	end
+	return false
+end
 
 function is_node_in_cube(nodenames, pos, s)
 	for i = -s, s do
 		for j = -s, s do
 			for k = -s, s do
 				local n = minetest.get_node_or_nil({x=pos.x+i, y=pos.y+j, z=pos.z+k})
-				if n == nil
-				or n.name == 'ignore'
+				if not n
+				or n.name == "ignore"
 				or table_contains(nodenames, n.name) == true then
 					return true
 				end
 			end
-		end
-	end
-	return false
-end
-
-table_contains = function(t, v)
-	for _,i in pairs(t) do
-		if i == v then
-			return true
 		end
 	end
 	return false
@@ -393,4 +392,4 @@ minetest.register_craftitem("vines:vines", {
 	inventory_image = "vines_vine.png",
 })
 
-minetest.log("info", "[Vines] v1.1 loaded")
+minetest.log("info", "[Vines] v1.1-special loaded")
