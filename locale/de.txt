@@ -1,0 +1,4 @@
+vines = Weinreben
+tendril = Ranke
+rotten tendril = verrottete Ranke
+rope = Seil

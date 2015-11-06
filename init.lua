@@ -1,15 +1,30 @@
 local vine_seed = 12
 
+-- intllib support
+local S, register_node
+if minetest.global_exists("intllib") then
+	S = intllib.Getter()
+	function register_node(name, data)
+		if data.description then
+			data.description = S(data.description)
+		end
+		return minetest.register_node(name, data)
+	end
+else
+	S = function(s) return s end
+	register_node = minetest.register_node
+end
+
 local function log(text)
-	minetest.log("action", text)
+	minetest.log("action", "[vines] "..text)
 end
 
 -- Nodes
 local c_air = minetest.get_content_id("air")
 local rope_side = "default_wood.png^vines_rope_shadow.png^vines_rope.png"
 
-minetest.register_node("vines:rope_block", {
-	description = "Rope",
+register_node("vines:rope_block", {
+	description = "rope",
 	sunlight_propagates = true,
 	paramtype = "light",
 	drops = "",
@@ -34,8 +49,8 @@ minetest.register_node("vines:rope_block", {
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
 		local n = minetest.get_node(p).name
 
-		if n ~= 'vines:rope'
-		and n ~= 'vines:rope_end' then
+		if n ~= "vines:rope"
+		and n ~= "vines:rope_end" then
 			return
 		end
 
@@ -43,13 +58,13 @@ minetest.register_node("vines:rope_block", {
 		local y1 = p.y
 		local tab = {}
 		local i = 1
-		while n == 'vines:rope' do
+		while n == "vines:rope" do
 			tab[i] = p
 			i = i+1
 			p.y = p.y-1
 			n = minetest.get_node(p).name
 		end
-		if n == 'vines:rope_end' then
+		if n == "vines:rope_end" then
 			tab[i] = p
 		end
 		local y0 = p.y
@@ -68,12 +83,12 @@ minetest.register_node("vines:rope_block", {
 		manip:set_data(nodes)
 		manip:write_to_map()
 		manip:update_map() -- <— this takes time
-		log(string.format("[vines] rope removed at "..minetest.pos_to_string(pos).." after: %.2fs", os.clock() - t1))
+		log(string.format("rope removed at "..minetest.pos_to_string(pos).." after: %.2fs", os.clock() - t1))
 	end
 })
 
-minetest.register_node("vines:rope", {
-	description = "Rope",
+register_node("vines:rope", {
+	description = "rope",
 	walkable = false,
 	climbable = true,
 	sunlight_propagates = true,
@@ -90,7 +105,7 @@ minetest.register_node("vines:rope", {
 
 })
 
-minetest.register_node("vines:rope_end", {
+register_node("vines:rope_end", {
 	walkable = false,
 	climbable = true,
 	sunlight_propagates = true,
@@ -119,12 +134,12 @@ local function dropitem(item, pos, inv)
 	minetest.add_item(pos, item)
 end
 
-minetest.register_node("vines:vine", {
-	description = "Vine",
+register_node("vines:vine", {
+	description = "tendril",
 	walkable = false,
 	climbable = true,
 	--buildable_to = true,
-	drop = 'vines:vines',
+	drop = "vines:vines",
 	sunlight_propagates = true,
 	paramtype = "light",
 	tiles = { "vines_vine.png" },
@@ -134,12 +149,12 @@ minetest.register_node("vines:vine", {
 	sounds = default.node_sound_leaves_defaults(),
 })
 
-minetest.register_node("vines:vine_rotten", {
-	description = "Rotten vine",
+register_node("vines:vine_rotten", {
+	description = "rotten tendril",
 	walkable = false,
 	climbable = true,
 	--buildable_to = true,
-	drop = 'vines:vines',
+	drop = "vines:vines",
 	sunlight_propagates = true,
 	paramtype = "light",
 	tiles = { "vines_vine_rotten.png" },
@@ -149,7 +164,7 @@ minetest.register_node("vines:vine_rotten", {
 	sounds = default.node_sound_leaves_defaults(),
 	after_dig_node = function(pos, oldnode, _, digger)
 		local inv = digger:get_inventory()
-		local item = 'vines:vines'
+		local item = "vines:vines"
 		local p = {x=pos.x, y=pos.y-1, z=pos.z}
 		local vine = oldnode.name
 		while minetest.get_node(p).name == vine do
@@ -203,7 +218,7 @@ local function grass_vine_abm(p)
 	p.y = p.y-1
 	if minetest.get_node(p).name == "air" then
 		minetest.add_node(p, {name="vines:vine"})
-		log("[vines] vine grew at: "..minetest.pos_to_string(p))
+		log("vine grew at: "..minetest.pos_to_string(p))
 	end
 end
 
@@ -211,6 +226,7 @@ minetest.register_abm({ --"sumpf:leaves", "jungletree:leaves_green", "jungletree
 	nodenames = {"default:dirt_with_grass"},
 	interval = 80,
 	chance = 200,
+	catch_up = false,
 	action = function(pos)
 		if abm_disallowed(pos) then
 			return
@@ -233,7 +249,7 @@ local function dirt_vine_abm(pos)
 	if minetest.get_node(p).name == "air"
 	and is_node_in_cube({"vines:vine"}, pos, 3) then
 		minetest.add_node(p, {name="vines:vine"})
-		log("[vines] vine grew at: "..minetest.pos_to_string(p))
+		log("vine grew at: "..minetest.pos_to_string(p))
 	end
 end
 
@@ -241,6 +257,7 @@ minetest.register_abm({
 	nodenames = {"default:dirt"},
 	interval = 36000,
 	chance = 10,
+	catch_up = false,
 	action = function(pos)
 		dirt_vine_abm(pos)
 		--[[minetest.delay_function(6000, function(pos)
@@ -259,7 +276,7 @@ local function vine_abm(pos)
 	--remove if top node is removed
 	if minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name == "air" then
 		minetest.remove_node(pos)
-		log("[vines] vine removed at: "..s_pos)
+		log("vine removed at: "..s_pos)
 		return
 	end
 
@@ -268,14 +285,14 @@ local function vine_abm(pos)
 	local pr = get_vine_random(pos)
 	--the second argument in the random function represents the average height
 	if pr:next(1,4) == 1 then
-		log("[vines] vine ended at: "..s_pos)
+		log("vine ended at: "..s_pos)
 		return
 	end
 
 	pos.y = pos.y-1
 	if minetest.get_node(pos).name =="air" then
 		minetest.add_node(pos, {name="vines:vine"})
-		log("[vines] vine got longer at: "..minetest.pos_to_string(pos))
+		log("vine got longer at: "..minetest.pos_to_string(pos))
 	end
 end
 
@@ -283,6 +300,7 @@ minetest.register_abm({
 	nodenames = {"vines:vine"},
 	interval = 5,
 	chance = 4,
+	catch_up = false,
 	action = function(pos)
 		if abm_disallowed(pos) then
 			return
@@ -312,7 +330,7 @@ local function rotten_vine_abm(pos)
 	)
 	or n_above == "air" then
 		minetest.remove_node(pos)
-		log("[vines] rotten vine disappeared at: "..minetest.pos_to_string(pos))
+		log("rotten vine disappeared at: "..minetest.pos_to_string(pos))
 	end
 end
 
@@ -320,6 +338,7 @@ minetest.register_abm({
 	nodenames = {"vines:vine_rotten"},
 	interval = 60,
 	chance = 4,
+	catch_up = false,
 	action = function(pos)
 		if abm_disallowed(pos) then
 			return
@@ -379,16 +398,16 @@ end
 
 -- craft rope
 minetest.register_craft({
-	output = 'vines:rope_block',
+	output = "vines:rope_block",
 	recipe = {
-		{'', 'default:wood', ''},
-		{'', 'vines:vines', ''},
-		{'', 'vines:vines', ''},
+		{"", "default:wood", ""},
+		{"", "vines:vines", ""},
+		{"", "vines:vines", ""},
 	}
 })
 
 minetest.register_craftitem("vines:vines", {
-	description = "Vines",
+	description = S("vines"),
 	inventory_image = "vines_vine.png",
 })
 
