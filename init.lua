@@ -2,7 +2,7 @@ local vine_seed = 12
 
 -- intllib support
 local S, register_node
-if minetest.global_exists("intllib") then
+if minetest.global_exists"intllib" then
 	S = intllib.Getter()
 	function register_node(name, data)
 		if data.description then
@@ -20,7 +20,7 @@ local function log(text)
 end
 
 -- Nodes
-local c_air = minetest.get_content_id("air")
+local c_air = minetest.get_content_id"air"
 local rope_side = "default_wood.png^vines_rope_shadow.png^vines_rope.png"
 
 register_node("vines:rope_block", {
@@ -73,7 +73,7 @@ register_node("vines:rope_block", {
 		local p1 = {x=p.x, y=y0, z=p.z}
 		local p2 = {x=p.x, y=y1, z=p.z}
 		local pos1, pos2 = manip:read_from_map(p1, p2)
-		area = VoxelArea:new({MinEdge=pos1, MaxEdge=pos2})
+		area = VoxelArea:new{MinEdge=pos1, MaxEdge=pos2}
 		nodes = manip:get_data()
 
 		for i in area:iterp(p1, p2) do
@@ -384,7 +384,7 @@ function is_node_in_cube(nodenames, pos, s)
 	for i = -s, s do
 		for j = -s, s do
 			for k = -s, s do
-				local n = minetest.get_node_or_nil({x=pos.x+i, y=pos.y+j, z=pos.z+k})
+				local n = minetest.get_node_or_nil{x=pos.x+i, y=pos.y+j, z=pos.z+k}
 				if not n
 				or n.name == "ignore"
 				or table_contains(nodenames, n.name) == true then
@@ -407,7 +407,7 @@ minetest.register_craft({
 })
 
 minetest.register_craftitem("vines:vines", {
-	description = S("vines"),
+	description = S"vines",
 	inventory_image = "vines_vine.png",
 })
 
